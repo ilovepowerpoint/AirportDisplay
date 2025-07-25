@@ -1,0 +1,1390 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Gate A18</title>
+    <style>
+        /* Import Google Fonts - Segoe UI for a clean, modern look */
+        @import url('https://fonts.googleapis.com/css2?family=Segoe+UI&display=swap');
+
+        /* CSS Custom Properties (Variables) for easy theme management */
+        :root {
+            --background-dark: #07142e;
+            /* Dark blue background for the body */
+            --primary-blue: #0160f2;
+            /* Bright blue for the top section */
+            --card-background: #0a2d7e;
+            /* Darker blue for the weather/time card body */
+            --text-color: #fff;
+            /* White text color */
+            --warning-color: #ffcc33;
+            /* Yellow for delayed/estimated status */
+            --on-time-color: #38a169;
+            /* Green for "On Time" status */
+            --footer-background: #021637;
+            /* Slightly different dark blue for the footer and new title bar */
+            --top-half-height: 40vh;
+            /* Height of the top section */
+            --footer-height: 6vh;
+            /* Height of the fixed footer */
+        }
+
+        /* Base styles for html and body */
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--text-color);
+            background: var(--background-dark);
+        }
+
+        /* Body as a flex container to manage vertical layout */
+        body {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            /* Full viewport height */
+            overflow: hidden;
+            /* Prevent scrolling */
+        }
+
+        /* Top half of the display: logo and weather/time */
+        .top-half {
+            background-color: var(--primary-blue);
+            flex: 0 0 var(--top-half-height);
+            /* Use variable for fixed height */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 4vw;
+            /* Horizontal padding relative to viewport width */
+            gap: 3vw;
+            /* Gap between logo and weather card */
+        }
+
+        /* Container for the airline logo */
+        .logo-container {
+            background: var(--text-color);
+            /* White background for the logo */
+            padding: 3vh 4vw;
+            /* Increased vertical padding */
+            border-radius: 12px;
+            /* Rounded corners */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 90%;
+            /* Ensure it takes up similar vertical space as weather-time */
+            flex: 1 1 48%;
+            /* Flexible width, takes up about half of the space */
+            box-sizing: border-box;
+            box-shadow: none;
+            /* No shadow by default */
+        }
+
+        /* Styling for the airline logo image */
+        .airline-logo-large {
+            max-height: 20vh;
+            /* Increased max-height for the airline logo */
+            max-width: 100%;
+            object-fit: contain;
+            /* Ensures the image fits within its container */
+        }
+
+        /* Container for alternating widgets in the top right */
+        .alternating-widgets-container {
+            position: relative;
+            flex: 1 1 48%;
+            /* Takes the same space as the original weather-time */
+            min-height: 90%;
+            box-sizing: border-box;
+            border-radius: 12px;
+            overflow: hidden;
+            /* Crucial for absolute positioned children with border-radius */
+        }
+
+        /* Common styles for both alternating widgets (Weather and Aircraft) */
+        .weather-time,
+        .aircraft-info {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            /* Hidden by default */
+            transition: opacity 1s ease-in-out;
+            /* Smooth fade transition */
+            display: flex;
+            /* Ensure flex properties are applied for internal layout */
+            flex-direction: column;
+            user-select: none;
+            color: var(--text-color);
+            text-align: center;
+            box-sizing: border-box;
+            border-radius: 12px;
+            background: var(--card-background);
+            /* Darker blue background for the card body */
+        }
+
+        .weather-time.active,
+        .aircraft-info.active {
+            opacity: 1;
+            /* Visible when active */
+        }
+
+        /* New title bar for the weather widget (reused for aircraft info) */
+        .weather-title-bar {
+            background-color: var(--footer-background);
+            /* Darker background for the title */
+            color: var(--text-color);
+            padding: 1.5vh 3vw;
+            /* Padding for the title bar */
+            text-align: center;
+            /* Match parent's top border-radius */
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+            flex-shrink: 0;
+            /* Prevent it from shrinking */
+        }
+
+        /* Title text within the new title bar */
+        .weather-time .title,
+        .aircraft-info .title {
+            /* Apply to both titles */
+            font-weight: 600;
+            font-size: 1.2rem;
+            /* Larger font size for prominence */
+            opacity: 1;
+            /* Fully opaque */
+            text-transform: uppercase;
+            margin-bottom: 0;
+            /* No bottom margin, as it's now part of the title bar */
+        }
+
+        /* New container for the content below the title (reused for aircraft info) */
+        .weather-content-body {
+            flex: 1;
+            /* Takes up all remaining vertical space */
+            display: flex;
+            flex-direction: column;
+            /* Default to column for weather widget */
+            justify-content: center;
+            /* Vertically center content */
+            align-items: center;
+            /* Horizontally center content */
+            padding: 0 3vw;
+            /* Horizontal padding for content */
+            gap: 0.6vh;
+            /* Gap between elements */
+        }
+
+        /* Destination text in the weather/time section */
+        .weather-time .destination {
+            font-weight: 700;
+            font-size: 2.8rem;
+            /* Reduced font size from 3.5rem to 2.8rem */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            /* Truncate long destination names */
+            margin-top: 0;
+            /* Managed by weather-content-body gap */
+            margin-bottom: 0;
+            /* Managed by weather-content-body gap */
+        }
+
+        /* Container for weather icon, temp, and local time */
+        .weather-local {
+            display: flex;
+            flex-direction: row;
+            /* Changed back to row for horizontal alignment */
+            justify-content: center;
+            align-items: center;
+            /* Vertically center items in the row */
+            margin-bottom: 0;
+            /* Managed by weather-content-body gap */
+        }
+
+        /* Weather icon styling */
+        .weather-icon {
+            width: 2.5em;
+            /* Match temperature font size */
+            height: 2.5em;
+            /* Match temperature font size */
+            margin-right: 4em;
+            /* Added horizontal margin to separate from temp */
+            margin-bottom: 0;
+            /* Removed vertical margin */
+            /* Ensure SVG fills its container and inherits color */
+            fill: currentColor;
+            /* Make SVG color match text color */
+        }
+
+        /* Weather temperature styling */
+        .weather-temp {
+            font-weight: 600;
+            font-size: 2.5rem;
+            /* Increased font size */
+            text-transform: capitalize;
+            margin-top: 0;
+            /* Ensure no extra top margin */
+            margin-bottom: 0;
+            /* Ensure no extra bottom margin */
+        }
+
+        /* Local time styling */
+        .local-time {
+            font-weight: 600;
+            font-size: 2.5rem;
+            /* Increased font size */
+            font-variant-numeric: tabular-nums;
+            /* Ensures consistent number spacing */
+            margin-left: 1.5em;
+            /* Increased spacing before local time */
+            margin-top: 0;
+            /* Removed vertical margin */
+        }
+
+        /* Specific styling for aircraft info widget */
+        .aircraft-content-body {
+            flex: 1;
+            /* Takes up all remaining vertical space */
+            display: flex;
+            flex-direction: row;
+            /* Main content is now a row (left column, right column) */
+            justify-content: space-between;
+            /* Space between left and right sections */
+            align-items: stretch;
+            /* Stretch children vertically */
+            padding: 1.5vh 3vw;
+            /* Overall padding for the content area */
+            gap: 1vw;
+            /* Gap between main sections */
+        }
+
+        .aircraft-left-column {
+            /* New container for aircraft type and image */
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            /* Align to top */
+            align-items: flex-start;
+            /* Align text and image to left */
+            flex-shrink: 0;
+            /* Prevent shrinking */
+            width: 45%;
+            /* Allocate specific width to this column */
+            padding-right: 1vw;
+            /* Padding to separate from right column */
+            box-sizing: border-box;
+            /* Include padding in width */
+        }
+
+        .aircraft-type-display {
+            /* Container for "Aircraft Type: A380" */
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            /* Align to top */
+            align-items: flex-start;
+            /* Align text to left */
+            width: 100%;
+            /* Take full full width */
+            margin-bottom: 0.5vh;
+            /* Space below this line */
+        }
+
+        .aircraft-type-label {
+            font-weight: 600;
+            font-size: 0.9rem;
+            /* Reduced font size */
+            opacity: 0.7;
+            text-transform: uppercase;
+            margin-right: 0;
+            /* Removed margin-right as it's now stacked */
+            margin-bottom: 0.2vh;
+            /* Small space below label */
+        }
+
+        .aircraft-type-value {
+            font-weight: 700;
+            font-size: 1.6rem;
+            /* Reduced font size for aircraft type value */
+            margin-bottom: 0;
+            /* No bottom margin, handled by parent gap */
+        }
+
+        .aircraft-visual-specs-column {
+            /* Container for specs only, now on the right */
+            display: flex;
+            flex-direction: column;
+            /* Stack specs vertically */
+            justify-content: center;
+            /* Vertically center spec items */
+            align-items: flex-end;
+            /* Align spec items to the right */
+            flex: 1;
+            /* Take remaining horizontal space */
+            gap: 0.3vh;
+            /* Reduced gap between text elements */
+        }
+
+        .aircraft-spec-list {
+            /* Renamed from aircraft-text-content */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            /* Vertically center spec items */
+            align-items: flex-end;
+            /* Align spec items to the right */
+            width: 100%;
+            /* Take full full width of parent column */
+            gap: 0.3vh;
+            /* Reduced gap between text elements */
+        }
+
+        .aircraft-spec-item {
+            display: flex;
+            justify-content: space-between;
+            /* Distribute label and value */
+            width: 100%;
+            /* Take full width of parent text content */
+            font-size: 1rem;
+            /* Reduced font size for spec values */
+            margin-bottom: 0;
+            /* Managed by parent gap */
+        }
+
+        .aircraft-info .spec-label {
+            font-weight: 500;
+            /* Slightly less bold than values */
+            opacity: 0.8;
+            /* Slightly faded */
+            text-align: left;
+            /* Label remains left-aligned within its item */
+            flex-shrink: 0;
+            /* Prevent label from shrinking */
+            margin-right: 0.5em;
+            /* Space between label and value */
+        }
+
+        .aircraft-info .spec-value {
+            font-weight: 600;
+            /* Bold for values */
+            text-align: right;
+            /* Align value to the right */
+            flex-grow: 1;
+            /* Allow value to take remaining space */
+            white-space: nowrap;
+            /* Prevent value from wrapping */
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .aircraft-info .aircraft-image {
+            width: 100%;
+            /* Take full width of its column */
+            height: auto;
+            /* Maintain aspect ratio */
+            object-fit: contain;
+            border-radius: 6px;
+            /* Consistent rounded corners */
+            flex-shrink: 0;
+            /* Prevent it from shrinking */
+            margin-top: 1vh;
+            /* Increased space above aircraft image */
+            filter: drop-shadow(0 0 15px rgba(1, 96, 242, 0.7));
+            /* Blue glow effect around the aircraft shape */
+        }
+
+        /* Bottom half of the display: flight information */
+        .bottom-half {
+            /* Calculate height to account for top-half and fixed footer */
+            height: calc(100vh - var(--top-half-height) - var(--footer-height));
+            flex: none;
+            /* Remove flex: 1 as height is now fixed */
+            padding: 0;
+            /* Removed padding from the bottom-half */
+            display: flex;
+            justify-content: center;
+            /* Centers content horizontally */
+            align-items: center;
+            /* Centers content vertically */
+            overflow: hidden;
+        }
+
+        /* Flight information section */
+        .flight-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 80vw;
+            /* Wider, but still centered, appearance */
+            width: 100%;
+            /* Ensures it still takes full width when narrower than max-width */
+            user-select: none;
+            color: var(--text-color);
+            gap: 4vw;
+            font-weight: 700;
+        }
+
+        /* Left and right sections within flight info */
+        .flight-left,
+        .flight-right {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            flex: 1;
+            /* Each takes up half the width */
+        }
+
+        .flight-left {
+            align-items: flex-start;
+            /* Align text to the left */
+        }
+
+        .flight-right {
+            align-items: flex-end;
+            /* Align text to the right */
+        }
+
+        /* Destination text in the main flight info */
+        .destination {
+            font-size: 6vw;
+            /* Large font size relative to viewport width */
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Departure time styling */
+        .departure-time {
+            font-weight: 600;
+            font-size: 4vw;
+            color: var(--text-color);
+            font-variant-numeric: tabular-nums;
+            margin-top: 0.3em;
+        }
+
+        /* Flight code styling */
+        .flight-code {
+            font-weight: 700;
+            font-size: 6vw;
+        }
+
+        /* Flight status container */
+        .status-container {
+            position: relative;
+            /* Needed for absolute positioning of children */
+            height: 4vw;
+            /* Ensure consistent height for fading content */
+            margin-top: 0.3em;
+            font-weight: 700;
+            /* Adjusted font-size for status text to ensure it fits on one line */
+            font-size: 3.5vw;
+            /* Slightly smaller font size */
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            /* Color will be set dynamically by JS */
+        }
+
+        /* Individual status elements for fading */
+        .status-text {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            opacity: 0;
+            /* Hidden by default */
+            transition: opacity 1s ease-in-out;
+            /* Smooth fade transition */
+            display: flex;
+            /* Use flex to center text vertically if needed */
+            align-items: center;
+            justify-content: flex-end;
+            /* Align text to the right, matching flight-right */
+            white-space: nowrap;
+            /* Ensure text stays on one line */
+        }
+
+        .status-text.active {
+            opacity: 1;
+            /* Visible when active */
+        }
+
+        /* Footer styling */
+        footer {
+            background-color: var(--footer-background);
+            /* Dark blue for footer */
+            height: var(--footer-height);
+            /* Use variable for fixed height */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 3vw;
+            font-size: 1.6vw;
+            color: var(--text-color);
+            user-select: none;
+            position: fixed;
+            /* Fixed at the bottom */
+            bottom: 0;
+            left: 0;
+            right: 0;
+            box-sizing: border-box;
+        }
+
+        /* Left side of the footer (for the ticker) */
+        .footer-left {
+            flex: 1;
+            overflow: hidden;
+            /* Hide overflowing ticker text */
+        }
+
+        /* Ticker text animation */
+        .ticker {
+            white-space: nowrap;
+            display: inline-block;
+            animation: scroll-left 60s linear infinite;
+            /* Animation duration and type */
+            color: var(--text-color);
+        }
+
+        /* Keyframes for the scrolling ticker animation */
+        @keyframes scroll-left {
+            0% {
+                transform: translateX(100%);
+                /* Start off-screen to the right */
+            }
+
+            100% {
+                transform: translateX(-100%);
+                /* End off-screen to the left */
+            }
+        }
+
+        /* Right side of the footer (for current time) */
+        .footer-right {
+            flex-shrink: 0;
+            min-width: 8rem;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        /* Media queries for responsiveness on smaller screens (e.g., mobile) */
+        @media (max-width: 900px) {
+            .top-half {
+                flex-direction: column;
+                /* Stack items vertically */
+                padding: 3vh 4vw;
+                gap: 2vh;
+                align-items: center;
+            }
+
+            .logo-container {
+                max-width: 90%;
+                padding: 1vh 3vw;
+                margin-bottom: 1vh;
+                flex: none;
+                /* Remove flex sizing */
+                max-height: 150px;
+                /* Max height for logo on mobile */
+            }
+
+            .alternating-widgets-container {
+                flex: none;
+                width: 100%;
+                /* Full width on mobile */
+                min-height: auto;
+            }
+
+            .weather-time,
+            .aircraft-info {
+                min-height: auto;
+            }
+
+            .weather-title-bar {
+                padding: 1.5vh 4vw;
+                /* Adjust padding for mobile */
+            }
+
+            .weather-time .title,
+            .aircraft-info .title {
+                font-size: 1.2rem;
+            }
+
+            .weather-content-body {
+                padding: 1.5vh 4vw;
+                /* Adjust padding for mobile */
+                gap: 1vh;
+                /* Adjust gap for mobile */
+            }
+
+            .weather-time .destination {
+                font-size: 2.5rem;
+                /* Adjusted font size for mobile */
+            }
+
+            .weather-icon {
+                width: 2em;
+                /* Match temperature font size on mobile */
+                height: 2em;
+                /* Match temperature font size on mobile */
+                margin-right: 0.2em;
+                /* Apply consistent small margin */
+                margin-bottom: 0;
+                /* No vertical margin on mobile for horizontal layout */
+            }
+
+            .weather-temp,
+            .local-time {
+                font-size: 7vw;
+                /* Adjusted font size for mobile */
+            }
+
+            .weather-local {
+                flex-direction: row;
+                /* Ensure row on mobile too */
+                gap: 0.5em;
+                /* Small gap between elements on mobile */
+            }
+
+            .aircraft-content-body {
+                flex-direction: column;
+                /* Stack vertically on mobile */
+                justify-content: center;
+                align-items: center;
+                padding: 1.5vh 4vw;
+                /* Re-added padding for mobile */
+                gap: 1vh;
+            }
+
+            .aircraft-left-column {
+                width: 100%;
+                /* Full width on mobile */
+                padding-right: 0;
+                /* Remove padding */
+                align-items: center;
+                /* Center text on mobile */
+            }
+
+            .aircraft-type-display {
+                margin-bottom: 1vh;
+                /* Adjust margin for mobile */
+                justify-content: center;
+                /* Center type display on mobile */
+            }
+
+            .aircraft-visual-specs-column {
+                flex-direction: column;
+                /* Stack image and specs vertically on mobile */
+                justify-content: center;
+                align-items: center;
+                gap: 1vh;
+            }
+
+            .aircraft-spec-list {
+                align-items: center;
+                /* Center text content on mobile */
+                text-align: center;
+                padding: 0;
+                /* Remove padding from text content on mobile */
+                gap: 0.5vh;
+                /* Adjust gap for mobile */
+            }
+
+            .aircraft-type-value {
+                font-size: 1.5rem;
+                /* Adjusted font size for mobile */
+            }
+
+            .aircraft-spec-item {
+                font-size: 0.9rem;
+                /* Adjusted font size for mobile */
+            }
+
+            .aircraft-image {
+                height: auto;
+                /* Adjusted height for mobile */
+                margin-left: 0;
+                /* Remove margin-left on mobile */
+                max-width: 90%;
+                /* Allow image to be wider on mobile */
+                margin-top: 0.5vh;
+                /* Add margin-top for mobile */
+                margin-bottom: 0.5vh;
+                /* Add margin-bottom for mobile */
+            }
+
+            .aircraft-info .zone-item {
+                font-size: 1rem;
+                padding: 0.5vh 2vw;
+            }
+
+            .aircraft-info .boarding-zones {
+                justify-content: center;
+                /* Center zones on mobile */
+            }
+
+            .bottom-half {
+                padding: 0;
+                /* Removed padding from the bottom-half for mobile as well */
+                /* On mobile, bottom-half height calculation might need adjustment if top-half height changes */
+                height: calc(100vh - var(--top-half-height-mobile) - var(--footer-height-mobile));
+            }
+
+            /* Define mobile specific heights if needed, or adjust top-half-height directly */
+            :root {
+                --top-half-height-mobile: 40vh;
+                /* Assuming it remains 40vh on mobile too, if not, adjust */
+                --footer-height-mobile: 8vh;
+                /* Footer height changes on mobile */
+            }
+
+            .flight-info {
+                flex-direction: column;
+                gap: 2vh;
+                font-size: 5vw;
+                max-width: 100%;
+            }
+
+            .flight-left,
+            .flight-right {
+                width: 100%;
+                align-items: center;
+                /* Center align text on mobile */
+            }
+
+            .destination,
+            .flight-code {
+                font-size: 8vw;
+            }
+
+            .departure-time,
+            .status {
+                font-size: 5vw;
+            }
+
+            /* Adjust status container height for mobile */
+            .status-container {
+                height: 4.5vw;
+                /* Adjusted height for mobile font size */
+                font-size: 4.5vw;
+                /* Adjusted font size for mobile */
+            }
+
+            footer {
+                font-size: 3.5vw;
+                height: var(--footer-height-mobile);
+                /* Use mobile variable for footer height */
+                padding: 0 4vw;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="top-half" role="banner" aria-label="Airline logo and display information">
+        <div class="logo-container">
+            <!-- Airline logo will be updated dynamically -->
+            <img class="airline-logo-large" id="airline-logo"
+                src="https://placehold.co/0x0/000000/FFFFFF?text=Loading+Logo" alt="Airline logo" decoding="async"
+                loading="lazy"
+                onerror="this.onerror=null;this.src='https://placehold.co/0x0/000000/FFFFFF?text=Logo+Not+Found';" />
+        </div>
+
+        <!-- Container for alternating widgets -->
+        <div class="alternating-widgets-container">
+            <section class="weather-time" id="weather-widget" aria-label="Destination information and weather">
+                <div class="weather-title-bar">
+                    <div class="title">Destination Information</div>
+                </div>
+                <div class="weather-content-body">
+                    <div class="destination" id="destination-city" aria-label="Destination city"></div>
+                    <div class="weather-local" aria-live="polite" aria-atomic="true">
+                        <!-- Weather icon will be updated dynamically -->
+                        <span class="weather-icon" id="weather-icon-svg"></span>
+                        <div class="weather-temp" id="weather-temp"></div>
+                        <div class="local-time" id="local-time">--:--</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="aircraft-info active" id="aircraft-widget" aria-label="Aircraft information">
+                <div class="weather-title-bar">
+                    <div class="title">Aircraft Information</div>
+                </div>
+                <div class="aircraft-content-body">
+                    <div class="aircraft-left-column">
+                        <div class="aircraft-type-display">
+                            <div class="aircraft-type-label">Aircraft type</div>
+                            <div class="aircraft-type-value" id="aircraft-type-value"></div>
+                        </div>
+                        <!-- Aircraft image will be updated dynamically based on aircraftDetails.imageUrl -->
+                        <img class="aircraft-image" id="aircraft-image"
+                            src="https://placehold.co/1x1/000000/FFFFFF?text=Aircraft+Image" alt="Aircraft image"
+                            decoding="async" loading="lazy"
+                            onerror="this.onerror=null;this.src='https://placehold.co/1x1/000000/FFFFFF?text=Image+Error';" />
+                    </div>
+                    <div class="aircraft-visual-specs-column">
+                        <div class="aircraft-spec-list">
+                            <div class="aircraft-spec-item">
+                                <span class="spec-label">Seats:</span>
+                                <span class="spec-value" id="aircraft-seats"></span>
+                            </div>
+                            <div class="aircraft-spec-item">
+                                <span class="spec-label">Length:</span>
+                                <span class="spec-value" id="aircraft-length"></span>
+                            </div>
+                            <div class="aircraft-spec-item">
+                                <span class="spec-label">Wingspan:</span>
+                                <span class="spec-value" id="aircraft-wingspan"></span>
+                            </div>
+                            <div class="aircraft-spec-item">
+                                <span class="spec-label">Height:</span>
+                                <span class="spec-value" id="aircraft-height"></span>
+                            </div>
+                            <div class="aircraft-spec-item">
+                                <span class="spec-label">Max speed:</span>
+                                <span class="spec-value" id="aircraft-max-speed"></span>
+                            </div>
+                            <div class="aircraft-spec-item">
+                                <span class="spec-label">Range:</span>
+                                <span class="spec-value" id="aircraft-range"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <div class="bottom-half" role="main" aria-label="Next departure flight">
+        <section class="flight-info">
+            <div class="flight-left">
+                <div class="destination" id="flight-destination" aria-label="Destination city"></div>
+                <div class="departure-time" id="departure-time" aria-label="Departure time"></div>
+            </div>
+            <div class="flight-right">
+                <div class="flight-code" id="flight-code" aria-label="Flight number"></div>
+                <!-- Status container for fading effect -->
+                <div class="status-container" id="status-container" aria-live="polite" aria-atomic="true">
+                    <div id="status-delayed" class="status-text">Delayed</div>
+                    <div id="status-estimated" class="status-text"></div>
+                    <div id="status-on-time" class="status-text">On Time</div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <footer role="contentinfo" aria-label="Airport information and current time">
+        <div class="footer-left" aria-live="polite" aria-atomic="true">
+            <div class="ticker" id="airport-info"></div> <!-- Ticker content will be set by JS -->
+        </div>
+        <div class="footer-right" id="current-time" aria-live="polite" aria-atomic="true" role="timer">--:--:--</div>
+    </footer>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, setDoc, getDoc, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Define the project ID explicitly
+        const PROJECT_ID = 'airport-48aee';
+
+        // Firebase configuration and initialization
+        const firebaseConfig = {
+            apiKey: "AIzaSyAaS-csdEobi4kudVAYhWlONbtJsgrQWGU",
+            authDomain: "airport-48aee.firebaseapp.com",
+            projectId: "airport-48aee",
+            storageBucket: "airport-48aee.firebasestorage.app",
+            messagingSenderId: "99018932663",
+            appId: "1:99018932663:web:ec67bbc0ebed1953b4e832",
+            measurementId: "G-WJLH773GMX"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let userId = null; // Will be set after authentication
+        const appId = PROJECT_ID;
+        const mainDisplayDocRef = doc(db, 'publicData', 'airportDisplayDoc');
+        const aircraftTypesCollectionRef = collection(db, 'aircraft_types'); // Top-level collection for general specs
+        const airlinesCollectionRef = collection(db, 'airlines'); // Top-level collection for airlines
+
+        // Default data for the display if Firestore is empty
+        const defaultDisplayData = {
+            destinationCity: "New York JFK",
+            weatherTemp: "23°C", // Initial default, will be updated by lookup
+            flightDestination: "New York JFK",
+            departureTime: "20:45",
+            flightCode: "BA 112",
+            estimatedTime: "", // Default to blank for "On Time"
+            tickerMessages: "Welcome to Heathrow Airport -,Please have your boarding pass and ID ready -,Enjoy your flight with British Airways -",
+            selectedAircraftId: "A380", // Default selected aircraft type
+            selectedAirlineId: "British Airways" // Default selected airline
+        };
+
+        let statusToggleInterval = null; // Global variable to hold the interval ID
+        let destinationTimeZone = 'Europe/London'; // Default timezone, will be updated from Firestore
+        let currentDestinationForWeather = ''; // To store the current destination for weather updates
+
+        // WeatherAPI Key: Please replace "YOUR_NEW_WEATHERAPI_KEY_HERE" with a valid API key from WeatherAPI.com
+        // The previous key appears to be disabled.
+        const WEATHERAPI_KEY = "c5312c5fd335457fb1c212353252407";
+
+        // SVG weather icons - Updated with more representative designs
+        const weatherIcons = {
+            "clear": `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.106a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 001.06 1.06l1.591-1.59zM12 18.75a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0v-2.25a.75.75 0 01.75-.75zM5.05 17.94a.75.75 0 001.06 1.06l1.591-1.59a.75.75 0 00-1.06-1.06l-1.591 1.59zM2.25 12a.75.75 0 01.75-.75h2.25a.75.75 0 010 1.5H3a.75.75 0 01-.75-.75zM17.94 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.06 1.06l1.59 1.591zM4.5 12a.75.75 0 01.75-.75h2.25a.75.75 0 010 1.5H5.25a.75.75 0 01-.75-.75zM12 5.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V6a.75.75 0 01.75-.75zM18.894 17.94a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 001.06 1.06l1.591-1.59zM6.106 5.05a.75.75 0 00-1.06 1.06l1.59 1.591a.75.75 0 001.06-1.06l-1.59-1.591z" clip-rule="evenodd" /></svg>`,
+            "partly-cloudy": `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.106a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 001.06 1.06l1.591-1.59zM12 18.75a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0v-2.25a.75.75 0 01.75-.75zM5.05 17.94a.75.75 0 001.06 1.06l1.591-1.59a.75.75 0 00-1.06-1.06l-1.591 1.59zM2.25 12a.75.75 0 01.75-.75h2.25a.75.75 0 010 1.5H3a.75.75 0 01-.75-.75zM17.94 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.06 1.06l1.59 1.591zM4.5 12a.75.75 0 01.75-.75h2.25a.75.75 0 010 1.5H5.25a.75.75 0 01-.75-.75zM12 5.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V6a.75.75 0 01.75-.75zM18.894 17.94a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 001.06 1.06l1.591-1.59zM6.106 5.05a.75.75 0 00-1.06 1.06l1.59 1.591a.75.75 0 001.06-1.06l-1.59-1.591zM16.5 10.5a.75.75 0 00-.75.75v.008a.75.75 0 00.75.75h.008a.75.75 0 00.75-.75v-.008a.75.75 0 00-.75-.75h-.008zM18 10.5a.75.75 0 00-.75.75v.008a.75.75 0 00.75.75h.008a.75.75 0 00.75-.75v-.008a.75.75 0 00-.75-.75H18zM19.5 10.5a.75.75 0 00-.75.75v.008a.75.75 0 00.75.75h.008a.75.75 0 00.75-.75v-.008a.75.75 0 00-.75-.75H19.5zM16.5 12a.75.75 0 00-.75.75v.008a.75.75 0 00.75.75h.008a.75.75 0 00.75-.75v-.008a.75.75 0 00-.75-.75h-.008zM18 12a.75.75 0 00-.75.75v.008a.75.75 0 00.75.75h.008a.75.75 0 00.75-.75v-.008a.75.75 0 00-.75-.75H18zM19.5 12a.75.75 0 00-.75.75v.008a.75.75 0 00.75.75h.008a.75.75 0 00.75-.75v-.008a.75.75 0 00-.75-.75H19.5zM16.5 13.5a.75.75 0 00-.75.75v.008a.75.75 0 00.75.75h.008a.75.75 0 00.75-.75v-.008a.75.75 0 00-.75-.75h-.008zM18 13.5a.75.75 0 00-.75.75v.008a.75.75 0 00.75.75h.008a.75.75 0 00.75-.75v-.008a.75.75 0 00-.75-.75H18zM19.5 13.5a.75.75 0 00-.75.75v.008a.75.75 0 00.75.75h.008a.75.75 0 00.75-.75v-.008a.75.75 0 00-.75-.75H19.5z" /></svg>`,
+            "cloudy": `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M1.5 6.75a3 3 0 013-3h16.5a3 3 0 013 3v9.75a3 3 0 01-3 3H4.5a3 3 0 01-3-3V6.75zm1.5 0V15a1.5 1.5 0 001.5 1.5h16.5a1.5 1.5 0 001.5-1.5V6.75a1.5 1.5 0 00-1.5-1.5H4.5a1.5 1.5 0 00-1.5 1.5zm1.5 1.5a.75.75 0 000 1.5h.008a.75.75 0 000-1.5H4.5zm2.25 0a.75.75 0 000 1.5h.008a.75.75 0 000-1.5H6.75zM9 8.25a.75.75 0 000 1.5h.008a.75.75 0 000-1.5H9zM11.25 8.25a.75.75 0 000 1.5h.008a.75.75 0 000-1.5H11.25zM13.5 8.25a.75.75 0 000 1.5h.008a.75.75 0 000-1.5H13.5zM15.75 8.25a.75.75 0 000 1.5h.008a.75.75 0 000-1.5H15.75zM18 8.25a.75.75 0 000 1.5h.008a.75.75 0 000-1.5H18zM20.25 8.25a.75.75 0 000 1.5h.008a.75.75 0 000-1.5H20.25z" clip-rule="evenodd" /><path d="M4.5 12.75a.75.75 0 000 1.5h.008a.75.75 0 000-1.5H4.5zm2.25 0a.75.75 0 000 1.5h.008a.75.75 0 000-1.5H6.75zM9 12.75a.75.75 0 000 1.5h.008a.75.75 0 000-1.5H9zM11.25 12.75a.75.75 0 000 1.5h.008a.75.75 0 000-1.5H11.25zM13.5 12.75a.75.75 0 000 1.5h.008a.75.75 0 000-1.5H13.5zM15.75 12.75a.75.75 0 000 1.5h.008a.75.75 0 000-1.5H15.75zM18 12.75a.75.75 0 000 1.5h.008a.75.75 0 000-1.5H18zM20.25 12.75a.75.75 0 000 1.5h.008a.75.75 0 000-1.5H20.25z" /></svg>`,
+            "rain": `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M12.5 7.5a.75.75 0 00-1.5 0v3.31L7.22 8.72a.75.75 0 00-1.06 1.06l4.5 4.5a.75.75 0 001.06 0l4.5-4.5a.75.75 0 00-1.06-1.06l-3.72 3.72V7.5z" clip-rule="evenodd" /><path d="M12 1.5c-2.31 0-4.496.79-6.195 2.126a.75.75 0 00.957 1.127A8.557 8.557 0 0112 3c4.418 0 8 3.582 8 8.001 0 2.05-.782 3.944-2.056 5.362a.75.75 0 001.157.966A9.487 9.487 0 0021.5 11C21.5 5.891 17.109 1.5 12 1.5z" /><path d="M12 7.5a4.5 4.5 0 014.5 4.5c0 1.352-.47 2.603-1.283 3.602a.75.75 0 00.86 1.139A6 6 0 0018 12a6 6 0 00-6-6V7.5z" /></svg>`,
+            "thunderstorm": `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M12.5 7.5a.75.75 0 00-1.5 0v3.31L7.22 8.72a.75.75 0 00-1.06 1.06l4.5 4.5a.75.75 0 001.06 0l4.5-4.5a.75.75 0 00-1.06-1.06l-3.72 3.72V7.5z" clip-rule="evenodd" /><path d="M12 1.5c-2.31 0-4.496.79-6.195 2.126a.75.75 0 00.957 1.127A8.557 8.557 0 0112 3c4.418 0 8 3.582 8 8.001 0 2.05-.782 3.944-2.056 5.362a.75.75 0 001.157.966A9.487 9.487 0 0021.5 11C21.5 5.891 17.109 1.5 12 1.5z" /><path d="M12 7.5a4.5 4.5 0 014.5 4.5c0 1.352-.47 2.603-1.283 3.602a.75.75 0 00.86 1.139A6 6 0 0018 12a6 6 0 00-6-6V7.5z" /><path d="M10.125 18.75a.75.75 0 01-.659-.352l-2.75-4.5a.75.75 0 01.815-1.079l2.75 4.5a.75.75 0 01-.156.728zM15.375 18.75a.75.75 0 01-.659-.352l-2.75-4.5a.75.75 0 01.815-1.079l2.75 4.5a.75.75 0 01-.156.728z" /></svg>`,
+            "snow": `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M12.5 7.5a.75.75 0 00-1.5 0v3.31L7.22 8.72a.75.75 0 00-1.06 1.06l4.5 4.5a.75.75 0 001.06 0l4.5-4.5a.75.75 0 00-1.06-1.06l-3.72 3.72V7.5z" clip-rule="evenodd" /><path d="M12 1.5c-2.31 0-4.496.79-6.195 2.126a.75.75 0 00.957 1.127A8.557 8.557 0 0112 3c4.418 0 8 3.582 8 8.001 0 2.05-.782 3.944-2.056 5.362a.75.75 0 001.157.966A9.487 9.487 0 0021.5 11C21.5 5.891 17.109 1.5 12 1.5z" /><path d="M12 7.5a4.5 4.5 0 014.5 4.5c0 1.352-.47 2.603-1.283 3.602a.75.75 0 00.86 1.139A6 6 0 0018 12a6 6 0 00-6-6V7.5z" /><path d="M12 16.5a.75.75 0 01.75.75v3a.75.75 0 01-1.5 0v-3a.75.75 0 01.75-.75zM6.75 16.5a.75.75 0 01.75.75v3a.75.75 0 01-1.5 0v-3a.75.75 0 01.75-.75zM17.25 16.5a.75.75 0 01.75.75v3a.75.75 0 01-1.5 0v-3a.75.75 0 01.75-.75z" /></svg>`,
+            "fog": `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M3.75 6.75a.75.75 0 01.75-.75h15a.75.75 0 010 1.5h-15a.75.75 0 01-.75-.75zM3.75 10.5a.75.75 0 01.75-.75h15a.75.75 0 010 1.5h-15a.75.75 0 01-.75-.75zM3.75 14.25a.75.75 0 01.75-.75h15a.75.75 0 010 1.5h-15a.75.75 0 01-.75-.75zM3.75 18a.75.75 0 01.75-.75h15a.75.75 0 010 1.5h-15a.75.75 0 01-.75-.75z" clip-rule="evenodd" /></svg>`,
+            "wind": `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M12.5 7.5a.75.75 0 00-1.5 0v3.31L7.22 8.72a.75.75 0 00-1.06 1.06l4.5 4.5a.75.75 0 001.06 0l4.5-4.5a.75.75 0 00-1.06-1.06l-3.72 3.72V7.5z" clip-rule="evenodd" /><path d="M12 1.5c-2.31 0-4.496.79-6.195 2.126a.75.75 0 00.957 1.127A8.557 8.557 0 0112 3c4.418 0 8 3.582 8 8.001 0 2.05-.782 3.944-2.056 5.362a.75.75 0 001.157.966A9.487 9.487 0 0021.5 11C21.5 5.891 17.109 1.5 12 1.5z" /><path d="M12 7.5a4.5 4.5 0 014.5 4.5c0 1.352-.47 2.603-1.283 3.602a.75.75 0 00.86 1.139A6 6 0 0018 12a6 6 0 00-6-6V7.5z" /><path d="M10.125 18.75a.75.75 0 01-.659-.352l-2.75-4.5a.75.75 0 01.815-1.079l2.75 4.5a.75.75 0 01-.156.728zM15.375 18.75a.75.75 0 01-.659-.352l-2.75-4.5a.75.75 0 01.815-1.079l2.75 4.5a.75.75 0 01-.156.728z" /></svg>`,
+            "default": `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12.75 9a.75.75 0 00-1.5 0v2.25H9a.75.75 0 000 1.5h2.25V15a.75.75 0 001.5 0v-2.25H15a.75.75 0 000-1.5h-2.25V9z" clip-rule="evenodd" /></svg>` // A question mark or generic icon
+        };
+
+        // Mapping WeatherAPI conditions to our SVG icon keys
+        const weatherConditionToIconMap = {
+            "Sunny": "clear",
+            "Clear": "clear",
+            "Partly cloudy": "partly-cloudy",
+            "Cloudy": "cloudy",
+            "Overcast": "cloudy",
+            "Mist": "fog",
+            "Fog": "fog",
+            "Freezing fog": "fog",
+            "Patchy rain possible": "rain",
+            "Light rain": "rain",
+            "Moderate rain at times": "rain",
+            "Moderate rain": "rain",
+            "Heavy rain at times": "rain",
+            "Heavy rain": "rain",
+            "Light freezing rain": "rain",
+            "Moderate or heavy freezing rain": "rain",
+            "Light sleet": "snow",
+            "Moderate or heavy sleet": "snow",
+            "Patchy light snow": "snow",
+            "Light snow": "snow",
+            "Patchy moderate snow": "snow",
+            "Moderate snow": "snow",
+            "Patchy heavy snow": "snow",
+            "Heavy snow": "snow",
+            "Ice pellets": "snow",
+            "Light showers of ice pellets": "snow",
+            "Moderate or heavy showers of ice pellets": "snow",
+            "Thundery outbreaks possible": "thunderstorm",
+            "Patchy light rain with thunder": "thunderstorm",
+            "Moderate or heavy rain with thunder": "thunderstorm",
+            "Patchy light snow with thunder": "thunderstorm",
+            "Moderate or heavy snow with thunder": "thunderstorm",
+            "Blizzard": "snow",
+            "Blowing snow": "snow",
+            "Freezing drizzle": "rain",
+            "Light drizzle": "rain",
+            "Moderate or heavy drizzle": "rain",
+            "Patchy light drizzle": "rain",
+            "Torrential rain shower": "rain",
+            "Light rain shower": "rain",
+            "Moderate or heavy rain shower": "rain",
+            "Light snow shower": "snow",
+            "Moderate or heavy snow shower": "snow",
+            "Light sleet showers": "snow",
+            "Moderate or heavy sleet showers": "snow",
+            "Light showers of ice pellets": "snow",
+            "Moderate or heavy showers of ice pellets": "snow",
+            "Partly cloudy ": "partly-cloudy", // WeatherAPI can sometimes return with a trailing space
+            "Clear ": "clear" // WeatherAPI can sometimes return with a trailing space
+        };
+
+
+        // Mapping of destinations to IANA time zone identifiers
+        const timeZoneMap = {
+            "New York JFK": "America/New_York",
+            "London Heathrow": "Europe/London",
+            "Paris CDG": "Europe/Paris",
+            "Dubai DXB": "Asia/Dubai",
+            "Tokyo NRT": "Asia/Tokyo",
+            "Sydney SYD": "Australia/Sydney",
+            "Los Angeles LAX": "America/Los_Angeles",
+            "Frankfurt FRA": "Europe/Berlin", // Germany uses Europe/Berlin
+            "Singapore SIN": "Asia/Singapore",
+            "Hong Kong HKG": "Asia/Hong_Kong",
+            "Amsterdam AMS": "Europe/Amsterdam",
+            "Madrid MAD": "Europe/Madrid",
+            "Rome FCO": "Europe/Rome",
+            "Beijing PEK": "Asia/Shanghai", // Beijing uses Asia/Shanghai
+            "Shanghai PVG": "Asia/Shanghai",
+            "Toronto YYZ": "America/Toronto",
+            "Vancouver YVR": "America/Vancouver",
+            "Mexico City MEX": "America/Mexico_City",
+            "Sao Paulo GRU": "America/Sao_Paulo",
+            "Buenos Aires EZE": "America/Argentina/Buenos_Aires",
+            "Berlin BER": "Europe/Berlin",
+            "Dublin DUB": "Europe/Dublin",
+            "Lisbon LIS": "Europe/Lisbon",
+            "Oslo OSL": "Europe/Oslo",
+            "Stockholm ARN": "Europe/Stockholm",
+            "Copenhagen CPH": "Europe/Copenhagen",
+            "Warsaw WAW": "Europe/Warsaw",
+            "Prague PRG": "Europe/Prague",
+            "Vienna VIE": "Europe/Vienna",
+            "Zurich ZRH": "Europe/Zurich",
+            "Geneva GVA": "Europe/Zurich", // Geneva also uses Europe/Zurich
+            "Brussels BRU": "Europe/Brussels",
+            "Barcelona BCN": "Europe/Madrid", // Barcelona uses Europe/Madrid
+            "Milan MXP": "Europe/Rome", // Milan uses Europe/Rome
+            "Munich MUC": "Europe/Berlin", // Munich uses Europe/Berlin
+            "Istanbul IST": "Europe/Istanbul",
+            "Moscow SVO": "Europe/Moscow",
+            "St. Petersburg LED": "Europe/Moscow", // St. Petersburg uses Europe/Moscow
+            "Helsinki HEL": "Europe/Helsinki",
+            "Reykjavik KEF": "Atlantic/Reykjavik",
+            "Cairo CAI": "Africa/Cairo",
+            "Johannesburg JNB": "Africa/Johannesburg",
+            "Cape Town CPT": "Africa/Johannesburg", // Cape Town uses Africa/Johannesburg
+            "Nairobi NBO": "Africa/Nairobi",
+            "Doha DOH": "Asia/Qatar",
+            "Abu Dhabi AUH": "Asia/Dubai", // Abu Dhabi uses Asia/Dubai
+            "Riyadh RUH": "Asia/Riyadh",
+            "New Delhi DEL": "Asia/Kolkata", // New Delhi uses Asia/Kolkata
+            "Mumbai BOM": "Asia/Kolkata", // Mumbai uses Asia/Kolkata
+            "Bangkok BKK": "Asia/Bangkok",
+            "Kuala Lumpur KUL": "Asia/Kuala_Lumpur",
+            "Jakarta CGK": "Asia/Jakarta",
+            "Manila MNL": "Asia/Manila",
+            "Seoul ICN": "Asia/Seoul",
+            "Osaka KIX": "Asia/Tokyo", // Osaka uses Asia/Tokyo
+            "Guangzhou CAN": "Asia/Shanghai", // Guangzhou uses Asia/Shanghai
+            "Chengdu CTU": "Asia/Shanghai", // Chengdu uses Asia/Shanghai
+            "Chongqing CKG": "Asia/Chongqing",
+            "Ho Chi Minh City SGN": "Asia/Ho_Chi_Minh",
+            "Hanoi HAN": "Asia/Ho_Chi_Minh", // Hanoi uses Asia/Ho_Chi_Minh
+            "Phuket HKT": "Asia/Bangkok", // Phuket uses Asia/Bangkok
+            "Denpasar DPS": "Asia/Makassar",
+            "Perth PER": "Australia/Perth", // Added full airport code for better matching
+            "Melbourne MEL": "Australia/Melbourne",
+            "Brisbane BNE": "Australia/Brisbane",
+            "Auckland AKL": "Pacific/Auckland",
+            "Wellington WLG": "Pacific/Auckland", // Wellington uses Pacific/Auckland
+            "Santiago SCL": "America/Santiago",
+            "Rio de Janeiro GIG": "America/Sao_Paulo", // Rio uses America/Sao_Paulo
+            "Lima LIM": "America/Lima",
+            "Bogota BOG": "America/Bogota"
+        };
+
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Authenticate with Firebase
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    userId = user.uid;
+                    console.log("Authenticated as:", userId);
+                    // Start listening to Firestore changes after authentication
+                    setupFirestoreListener();
+                } else {
+                    // Sign in anonymously if no user is authenticated
+                    try {
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            try {
+                                await signInWithCustomToken(auth, __initial_auth_token);
+                            } catch (customTokenError) {
+                                console.warn("Custom token sign-in failed, attempting anonymous sign-in:", customTokenError);
+                                await signInAnonymously(auth);
+                            }
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    } catch (error) {
+                        console.error("Error signing in:", error);
+                    }
+                }
+            });
+
+            function setupFirestoreListener() {
+                onSnapshot(mainDisplayDocRef, async (docSnap) => { // Listen to mainDisplayDocRef
+                    let data = defaultDisplayData;
+                    if (docSnap.exists()) {
+                        data = docSnap.data();
+                    } else {
+                        console.log("No main display data in Firestore, setting default data.");
+                        await setDoc(mainDisplayDocRef, defaultDisplayData)
+                            .then(() => console.log("Default main display data set successfully."))
+                            .catch((error) => console.error("Error setting default main display data:", error));
+                    }
+                    console.log("Current data from Firestore (main display):", data);
+
+                    // Update the destinationTimeZone based on the fetched flightDestination
+                    const currentDestination = data.flightDestination || '';
+                    // Find the best matching timezone
+                    let matchedTimeZone = 'Europe/London'; // Default fallback
+                    const lowerCaseDestination = currentDestination.toLowerCase();
+
+                    for (const key in timeZoneMap) {
+                        // Check if the input destination includes the key, or the key includes the input destination
+                        if (lowerCaseDestination.includes(key.toLowerCase()) || key.toLowerCase().includes(lowerCaseDestination)) {
+                            matchedTimeZone = timeZoneMap[key];
+                            break; // Found a match, stop searching
+                        }
+                    }
+                    destinationTimeZone = matchedTimeZone;
+                    currentDestinationForWeather = currentDestination; // Set for weather updates
+
+                    // Fetch aircraft details (general specs) based on selectedAircraftId
+                    let aircraftDetails = {};
+                    if (data.selectedAircraftId) {
+                        try {
+                            const aircraftDocSnap = await getDoc(doc(aircraftTypesCollectionRef, data.selectedAircraftId));
+                            if (aircraftDocSnap.exists()) {
+                                aircraftDetails = aircraftDocSnap.data();
+                                console.log("Fetched general aircraft details:", aircraftDetails);
+                            } else {
+                                console.warn(`Aircraft type "${data.selectedAircraftId}" not found in aircraft_types collection.`);
+                            }
+                        } catch (error) {
+                            console.error("Error fetching general aircraft details:", error);
+                        }
+                    }
+
+                    // Fetch airline details based on selectedAirlineId
+                    let airlineDetails = {};
+                    if (data.selectedAirlineId) {
+                        try {
+                            const airlineDocSnap = await getDoc(doc(airlinesCollectionRef, data.selectedAirlineId));
+                            if (airlineDocSnap.exists()) {
+                                airlineDetails = airlineDocSnap.data();
+                                console.log("Fetched airline details:", airlineDetails);
+                            } else {
+                                console.warn(`Airline "${data.selectedAirlineId}" not found in airlines collection.`);
+                            }
+                        } catch (error) {
+                            console.error("Error fetching airline details:", error);
+                        }
+                    }
+
+                    // Fetch airline-specific aircraft image
+                    let airlineSpecificAircraftImage = {};
+                    if (data.selectedAirlineId && data.selectedAircraftId) {
+                        try {
+                            const airlineAircraftImageDocRef = doc(collection(db, 'airlines', data.selectedAirlineId, 'aircraftImages'), data.selectedAircraftId);
+                            const airlineAircraftImageDocSnap = await getDoc(airlineAircraftImageDocRef);
+                            if (airlineAircraftImageDocSnap.exists()) {
+                                airlineSpecificAircraftImage = airlineAircraftImageDocSnap.data();
+                                console.log("Fetched airline-specific aircraft image:", airlineSpecificAircraftImage);
+                            } else {
+                                console.warn(`No specific image found for aircraft "${data.selectedAircraftId}" under airline "${data.selectedAirlineId}".`);
+                            }
+                        } catch (error) {
+                            console.error("Error fetching airline-specific aircraft image:", error);
+                        }
+                    }
+
+                    updateDisplay(data, aircraftDetails, airlineDetails, airlineSpecificAircraftImage); // Pass all relevant data
+                    updateDestinationTime(); // Call to update time immediately after data load
+                    updateWeather(); // Call to update weather immediately after data load
+                }, (error) => {
+                    console.error("Error listening to Firestore (main display):", error);
+                });
+            }
+
+            function updateDisplay(data, generalAircraftDetails, airlineDetails, airlineSpecificAircraftImage) {
+                // Update airline logo and name
+                const airlineLogoElement = document.getElementById('airline-logo');
+                if (airlineLogoElement) {
+                    airlineLogoElement.src = airlineDetails.logoUrl || 'https://placehold.co/0x0/000000/FFFFFF?text=Logo+Not+Found';
+                    airlineLogoElement.alt = airlineDetails.name ? `${airlineDetails.name} logo` : 'Airline logo';
+                }
+
+                // Update weather/destination widget (temperature updated by updateWeather)
+                document.getElementById('destination-city').textContent = data.flightDestination || '';
+
+                // Update flight info widget
+                document.getElementById('flight-destination').textContent = data.flightDestination || '';
+                document.getElementById('departure-time').textContent = data.departureTime || '';
+                document.getElementById('flight-code').textContent = data.flightCode || '';
+
+                // Get status elements and container
+                const statusContainer = document.getElementById('status-container');
+                const delayedStatus = document.getElementById('status-delayed');
+                const estimatedStatus = document.getElementById('status-estimated');
+                const onTimeStatus = document.getElementById('status-on-time');
+                const estimatedTime = data.estimatedTime;
+
+                // Clear any existing interval to prevent multiple toggles
+                if (statusToggleInterval) {
+                    clearInterval(statusToggleInterval);
+                    statusToggleInterval = null;
+                }
+
+                // Reset active classes
+                delayedStatus.classList.remove('active');
+                estimatedStatus.classList.remove('active');
+                onTimeStatus.classList.remove('active');
+
+                if (estimatedTime && estimatedTime.trim() !== '') {
+                    // Delayed state
+                    estimatedStatus.textContent = `EST: ${estimatedTime}`;
+                    statusContainer.style.color = 'var(--warning-color)';
+
+                    // Set initial active state and start toggling
+                    delayedStatus.classList.add('active');
+
+                    let isDelayedActive = true;
+                    statusToggleInterval = setInterval(() => {
+                        if (isDelayedActive) {
+                            delayedStatus.classList.remove('active');
+                            estimatedStatus.classList.add('active');
+                        } else {
+                            estimatedStatus.classList.remove('active');
+                            delayedStatus.classList.add('active');
+                        }
+                        isDelayedActive = !isDelayedActive;
+                    }, 5000); // Toggle every 5 seconds
+                } else {
+                    // On Time state
+                    onTimeStatus.textContent = "On Time";
+                    onTimeStatus.classList.add('active');
+                    statusContainer.style.color = 'var(--on-time-color)'; // Green color for On Time
+                    estimatedStatus.textContent = ''; // Clear any previous EST text
+                }
+
+                // Update aircraft info widget using generalAircraftDetails and airlineSpecificAircraftImage
+                document.getElementById('aircraft-type-value').textContent = generalAircraftDetails.type || 'N/A';
+                document.getElementById('aircraft-seats').textContent = generalAircraftDetails.seats || 'N/A';
+                document.getElementById('aircraft-length').textContent = generalAircraftDetails.length || 'N/A';
+                document.getElementById('aircraft-wingspan').textContent = generalAircraftDetails.wingspan || 'N/A';
+                document.getElementById('aircraft-height').textContent = generalAircraftDetails.height || 'N/A';
+                document.getElementById('aircraft-max-speed').textContent = generalAircraftDetails.maxSpeed || 'N/A';
+                document.getElementById('aircraft-range').textContent = generalAircraftDetails.range || 'N/A';
+
+                // Set the aircraft image based on airlineSpecificAircraftImage.imageUrl
+                const aircraftImageElement = document.getElementById('aircraft-image');
+                if (aircraftImageElement) {
+                    aircraftImageElement.src = airlineSpecificAircraftImage.imageUrl || 'https://placehold.co/0x0/000000/FFFFFF?text=Aircraft+Image+Not+Found';
+                }
+
+                // Update footer ticker
+                document.getElementById('airport-info').textContent = data.tickerMessages || '';
+            }
+
+            // Function to fetch and update weather data
+            async function updateWeather() {
+                const weatherTempElement = document.getElementById('weather-temp');
+                const weatherIconSvgElement = document.getElementById('weather-icon-svg');
+
+                if (!currentDestinationForWeather || WEATHERAPI_KEY === "YOUR_NEW_WEATHERAPI_KEY_HERE") {
+                    weatherTempElement.textContent = "--°C";
+                    weatherIconSvgElement.innerHTML = weatherIcons["default"];
+                    console.warn("Weather API key not set or destination not available. Please replace 'YOUR_NEW_WEATHERAPI_KEY_HERE' with a valid key from WeatherAPI.com");
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`https://api.weatherapi.com/v1/current.json?key=${WEATHERAPI_KEY}&q=${encodeURIComponent(currentDestinationForWeather)}`);
+                    const weatherData = await response.json();
+
+                    if (response.ok && weatherData.current) {
+                        const tempC = weatherData.current.temp_c;
+                        const conditionText = weatherData.current.condition.text;
+
+                        weatherTempElement.textContent = `${tempC}°C`;
+
+                        // Map condition text to our SVG icons
+                        //const iconKey = weatherConditionToIconMap[conditionText.trim()] || "default";
+                        //weatherIconSvgElement.innerHTML = weatherIcons[iconKey];
+
+                        weatherIconSvgElement.innerHTML = `<img src="https://${weatherData.current.condition.icon}"></img>`;
+
+                        console.log(weatherData.current);
+                    } else {
+                        console.error("Error fetching weather data:", weatherData.error?.message || "Unknown error");
+                        weatherTempElement.textContent = "--°C";
+                        weatherIconSvgElement.innerHTML = weatherIcons["default"];
+                    }
+                } catch (error) {
+                    console.error("Network or parsing error fetching weather:", error);
+                    weatherTempElement.textContent = "--°C";
+                    weatherIconSvgElement.innerHTML = weatherIcons["default"];
+                }
+            }
+
+            // Update footer current time every second
+            function updateCurrentTime() {
+                const now = new Date();
+                const hours = now.getHours().toString().padStart(2, '0');
+                const minutes = now.getMinutes().toString().padStart(2, '0');
+                const seconds = now.getSeconds().toString().padStart(2, '0');
+                document.getElementById('current-time').textContent = `${hours}:${minutes}:${seconds}`;
+            }
+
+            // Initialize and keep updating every second
+            updateCurrentTime();
+            setInterval(updateCurrentTime, 1000);
+
+            // Update the local time in top right widget for the destination
+            function updateDestinationTime() {
+                const now = new Date();
+                const options = {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    timeZone: destinationTimeZone, // Use the dynamically set timezone
+                    hour12: false // Ensure 24-hour format
+                };
+                // Use a try-catch block for toLocaleTimeString as invalid timezones can throw errors
+                let timeString;
+                try {
+                    timeString = now.toLocaleTimeString('en-US', options);
+                } catch (e) {
+                    console.error("Error getting time for timezone:", destinationTimeZone, e);
+                    timeString = "--:--"; // Fallback in case of invalid timezone
+                }
+                document.getElementById('local-time').textContent = timeString;
+            }
+
+            // Update destination time every minute
+            setInterval(updateDestinationTime, 60000);
+            // Update weather every 10 minutes (600,000 milliseconds)
+            setInterval(updateWeather, 600000);
+
+
+            // New logic for alternating top-right widgets
+            const weatherWidget = document.getElementById('weather-widget');
+            const aircraftWidget = document.getElementById('aircraft-widget');
+            let isWeatherActive = false;
+
+            function toggleTopWidgets() {
+                if (weatherWidget && aircraftWidget) {
+                    if (isWeatherActive) {
+                        weatherWidget.classList.remove('active');
+                        aircraftWidget.classList.add('active');
+                    } else {
+                        aircraftWidget.classList.remove('active');
+                        weatherWidget.classList.add('active');
+                    }
+                    isWeatherActive = !isWeatherActive;
+                }
+            }
+
+            if (aircraftWidget && weatherWidget) {
+                aircraftWidget.classList.add('active');
+                weatherWidget.classList.remove('active');
+                setInterval(toggleTopWidgets, 8000);
+            }
+        });
+    </script>
+</body>
+
+</html>

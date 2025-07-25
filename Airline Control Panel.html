@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Airline Control Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Import Inter font for a modern, clean look */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f7f6; /* Light, clean background */
+            color: #333333; /* Standard dark grey for text */
+            padding: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align to top */
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 600px;
+            width: 100%;
+            margin: 0 auto;
+            background-color: #FFFFFF; /* White background for the main card */
+            padding: 2rem;
+            border-radius: 0.75rem; /* rounded-lg */
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e0e0e0; /* Subtle border */
+        }
+        h1 {
+            font-size: 2.25rem; /* text-3xl */
+            font-weight: 700; /* font-bold */
+            color: #1f2937; /* Darker grey for main heading */
+            margin-bottom: 2.5rem; /* mb-10 */
+            text-align: center;
+        }
+        .form-section {
+            background-color: #f9fafb; /* Light grey background for sections */
+            padding: 1.5rem;
+            border-radius: 0.5rem; /* rounded-md */
+            margin-bottom: 1.5rem;
+            border: 1px solid #e5e7eb; /* Light border for sections */
+        }
+        h2 {
+            font-size: 1.5rem; /* text-2xl */
+            font-weight: 600; /* font-semibold */
+            color: #3b82f6; /* Blue for section headings */
+            margin-bottom: 1.5rem; /* mb-6 */
+            padding-bottom: 0.75rem; /* pb-3 */
+            border-bottom: 2px solid #bfdbfe; /* border-b-2 border-blue-100 */
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500; /* font-medium */
+            color: #4b5563; /* Medium grey for labels */
+            font-size: 0.875rem; /* text-sm */
+        }
+        input[type="text"],
+        input[type="url"],
+        select {
+            width: 100%;
+            padding: 0.625rem; /* p-[10px] */
+            margin-bottom: 1rem;
+            border: 1px solid #d1d5db; /* border-gray-300 */
+            border-radius: 0.375rem; /* rounded-md */
+            background-color: #ffffff; /* bg-white */
+            color: #1f2937; /* text-gray-800 */
+            box-sizing: border-box; /* Ensure padding doesn't increase width */
+            font-size: 0.875rem; /* text-sm */
+            line-height: 1.25rem; /* leading-tight */
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+        input[type="text"]:focus,
+        input[type="url"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #3b82f6; /* focus:border-blue-500 */
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25); /* focus:ring-2 focus:ring-blue-500 */
+        }
+        select {
+            appearance: none; /* Remove default arrow */
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='currentColor'%3E%3Cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem; /* Make space for the arrow */
+        }
+        .button-group {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        button {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow for buttons */
+        }
+        .save-button {
+            background-color: #3b82f6; /* Blue save button */
+            color: white;
+        }
+        .save-button:hover {
+            background-color: #2563eb; /* Darker blue on hover */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        .add-button {
+            background-color: #10b981; /* Green add button */
+            color: white;
+        }
+        .add-button:hover {
+            background-color: #059669; /* Darker green on hover */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        .delete-button {
+            background-color: #ef4444; /* Red delete button */
+            color: white;
+        }
+        .delete-button:hover {
+            background-color: #dc2626; /* Darker red on hover */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        .set-current-button {
+            background-color: #f59e0b; /* Orange set current button */
+            color: white;
+        }
+        .set-current-button:hover {
+            background-color: #d97706; /* Darker orange on hover */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        .reset-button {
+            background-color: #6b7280; /* Grey reset button */
+            color: white;
+        }
+        .reset-button:hover {
+            background-color: #4b5563; /* Darker grey on hover */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        .loading-indicator {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 1.125rem; /* text-lg */
+            color: #6b7280; /* text-gray-500 */
+        }
+        .user-id {
+            font-size: 0.875rem; /* text-sm */
+            color: #9ca3af; /* text-gray-400 */
+            text-align: center;
+            margin-bottom: 1.5rem; /* mb-6 */
+            word-break: break-all; /* Ensures long IDs wrap */
+        }
+        .message-box {
+            position: fixed;
+            top: 1.5rem; /* top-6 */
+            right: 1.5rem; /* right-6 */
+            background-color: #10b981; /* bg-green-600 */
+            color: white;
+            padding: 0.75rem 1.5rem; /* px-6 py-3 */
+            border-radius: 0.5rem; /* rounded-lg */
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* shadow-lg */
+            z-index: 50; /* z-50 */
+            transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+            transform: translateX(100%); /* Hidden by default */
+            opacity: 0;
+            display: block; /* Keep block for transitions, hide with opacity/transform */
+        }
+        .message-box.show {
+            transform: translateX(0); /* Slide in */
+            opacity: 1;
+        }
+        .message-box.error {
+            background-color: #ef4444; /* bg-red-500 */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Airline Control Panel</h1>
+
+        <div class="user-id" id="user-id-display">Loading User ID...</div>
+
+        <div class="loading-indicator" id="loading-indicator">Connecting to Firebase...</div>
+
+        <form id="airline-form" class="hidden">
+            <div class="form-section">
+                <h2>Add New Airline</h2>
+                <label for="newAirlineName">Airline Name (e.g., British Airways):</label>
+                <input type="text" id="newAirlineName" name="newAirlineName" placeholder="Enter new airline name">
+                
+                <label for="newAirlineLogoUrl">Airline Logo URL:</label>
+                <input type="url" id="newAirlineLogoUrl" name="newAirlineLogoUrl" placeholder="e.g., https://example.com/logo.png">
+                
+                <button type="button" id="addNewAirlineButton" class="add-button w-full">Add New Airline</button>
+            </div>
+
+            <div class="form-section">
+                <h2>Manage Existing Airlines</h2>
+                <label for="airlineSelect">Select Airline to Edit/Manage:</label>
+                <select id="airlineSelect" name="airlineSelect">
+                    <option value="">-- Select an Airline --</option>
+                </select>
+
+                <div class="mt-4">
+                    <label for="editAirlineName">Airline Name:</label>
+                    <input type="text" id="editAirlineName" name="editAirlineName" placeholder="Airline Name">
+                    
+                    <label for="editAirlineLogoUrl">Logo URL:</label>
+                    <input type="url" id="editAirlineLogoUrl" name="editAirlineLogoUrl" placeholder="Logo URL">
+                </div>
+
+                <div class="button-group mt-6">
+                    <button type="button" id="resetEditButton" class="reset-button">Clear Fields</button>
+                    <button type="submit" class="save-button">Save Edited Airline</button>
+                </div>
+                
+                <div class="button-group mt-4">
+                    <button type="button" id="deleteAirlineButton" class="delete-button">Delete Selected Airline</button>
+                    <button type="button" id="setCurrentAirlineButton" class="set-current-button">Set as Current for Display</button>
+                </div>
+            </div>
+        </form>
+        <div id="messageBox" class="message-box"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, setDoc, getDoc, collection, getDocs, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Define the project ID explicitly
+        const PROJECT_ID = 'airport-48aee';
+
+        // Firebase configuration and initialization
+        const firebaseConfig = {
+            apiKey: "AIzaSyAaS-csdEobi4kudVAYhWlONbtJsgrQWGU",
+            authDomain: "airport-48aee.firebaseapp.com",
+            projectId: "airport-48aee",
+            storageBucket: "airport-48aee.firebasestorage.app",
+            messagingSenderId: "99018932663",
+            appId: "1:99018932663:web:ec67bbc0ebed1953b4e832",
+            measurementId: "G-WJLH773GMX"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let userId = null;
+        // Reference to the main display document (publicly accessible)
+        const mainDisplayDocRef = doc(db, 'publicData', 'airportDisplayDoc');
+        // Reference to the top-level collection for airlines
+        const airlinesCollectionRef = collection(db, 'airlines'); 
+
+        // UI Element references
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const airlineForm = document.getElementById('airline-form');
+        const userIdDisplay = document.getElementById('user-id-display');
+        const airlineSelect = document.getElementById('airlineSelect');
+        const newAirlineNameInput = document.getElementById('newAirlineName');
+        const newAirlineLogoUrlInput = document.getElementById('newAirlineLogoUrl');
+        const addNewAirlineButton = document.getElementById('addNewAirlineButton');
+        const deleteAirlineButton = document.getElementById('deleteAirlineButton');
+        const setCurrentAirlineButton = document.getElementById('setCurrentAirlineButton');
+        const editAirlineNameInput = document.getElementById('editAirlineName');
+        const editAirlineLogoUrlInput = document.getElementById('editAirlineLogoUrl');
+        const resetEditButton = document.getElementById('resetEditButton');
+        const messageBox = document.getElementById('messageBox');
+
+        let allAirlines = {}; // Stores all airline data, keyed by airline ID (which is also the name)
+        let selectedAirlineId = ''; // The ID of the currently selected airline in the dropdown
+
+        /**
+         * Displays a temporary message in a floating box.
+         * @param {string} message - The text content of the message.
+         * @param {string} type - 'success', 'error', or 'info' to determine styling.
+         */
+        function showMessage(message, type = 'info') {
+            // Clear any existing hide timeout to prevent conflicts if showMessage is called rapidly
+            if (messageBox.hideTimeout) {
+                clearTimeout(messageBox.hideTimeout);
+            }
+
+            messageBox.textContent = message;
+            // Reset classes and apply base 'show' class
+            messageBox.className = 'messageBox show'; 
+            // Apply type-specific class for color
+            if (type === 'error') {
+                messageBox.classList.add('error');
+            } else {
+                messageBox.classList.remove('error'); // Ensure error class is removed for success/info
+            }
+
+            // Set a timeout to hide the message box after 3 seconds
+            messageBox.hideTimeout = setTimeout(() => {
+                messageBox.classList.remove('show'); // Trigger CSS transition to hide the box
+            }, 3000); 
+        }
+
+        /**
+         * Clears the input fields used for editing an airline.
+         */
+        function clearEditFields() {
+            editAirlineNameInput.value = '';
+            editAirlineLogoUrlInput.value = '';
+        }
+
+        /**
+         * Populates the edit input fields with data from a selected airline.
+         * @param {object} data - The airline data object (name, logoUrl).
+         */
+        function populateEditFields(data) {
+            editAirlineNameInput.value = data.name || '';
+            editAirlineLogoUrlInput.value = data.logoUrl || '';
+        }
+
+        /**
+         * Fetches all airlines from Firestore and populates the dropdown.
+         * Also attempts to pre-select the airline currently set on the main display.
+         */
+        async function loadAirlines() {
+            airlineSelect.innerHTML = '<option value="">-- Select an Airline --</option>'; // Reset dropdown
+            allAirlines = {}; // Clear previous data
+
+            try {
+                const querySnapshot = await getDocs(airlinesCollectionRef);
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    allAirlines[doc.id] = data; // Store airline data keyed by its ID
+                    const option = document.createElement('option');
+                    option.value = doc.id;
+                    option.textContent = data.name || doc.id; // Display name, use ID as fallback
+                    airlineSelect.appendChild(option);
+                });
+
+                // After loading all airlines, try to pre-select the one currently on the main display
+                const mainDocSnap = await getDoc(mainDisplayDocRef);
+                if (mainDocSnap.exists()) {
+                    const currentSelectedAirlineId = mainDocSnap.data().selectedAirlineId;
+                    if (currentSelectedAirlineId && allAirlines[currentSelectedAirlineId]) {
+                        airlineSelect.value = currentSelectedAirlineId;
+                        selectedAirlineId = currentSelectedAirlineId;
+                        populateEditFields(allAirlines[selectedAirlineId]); // Populate edit fields for the pre-selected airline
+                    } else {
+                        clearEditFields();
+                        selectedAirlineId = '';
+                    }
+                } else {
+                    clearEditFields();
+                    selectedAirlineId = '';
+                }
+
+                if (Object.keys(allAirlines).length === 0) {
+                    showMessage("No airlines found. Add a new one using the form above!", 'info');
+                }
+
+            } catch (error) {
+                console.error("Error loading airlines:", error);
+                showMessage("Error loading airlines.", 'error');
+            }
+        }
+
+        // Event listener for dropdown selection change
+        airlineSelect.addEventListener('change', () => {
+            selectedAirlineId = airlineSelect.value;
+            if (selectedAirlineId && allAirlines[selectedAirlineId]) {
+                populateEditFields(allAirlines[selectedAirlineId]);
+            } else {
+                clearEditFields();
+            }
+        });
+
+        // Event listener for "Add New Airline" button
+        addNewAirlineButton.addEventListener('click', async () => {
+            const newName = newAirlineNameInput.value.trim();
+            const newLogoUrl = newAirlineLogoUrlInput.value.trim();
+
+            if (!newName) {
+                showMessage("Please enter a name for the new airline.", 'error');
+                return;
+            }
+            // Check if an airline with this name (ID) already exists
+            if (allAirlines[newName]) { 
+                showMessage(`Airline "${newName}" already exists.`, 'error');
+                return;
+            }
+
+            try {
+                // Use setDoc to add a new document to the 'airlines' collection, using the name as the ID
+                await setDoc(doc(airlinesCollectionRef, newName), { 
+                    name: newName,
+                    logoUrl: newLogoUrl
+                });
+                newAirlineNameInput.value = ''; // Clear input fields
+                newAirlineLogoUrlInput.value = ''; 
+                await loadAirlines(); // Reload the dropdown to show the new airline
+                airlineSelect.value = newName; // Select the newly added airline in the dropdown
+                selectedAirlineId = newName;
+                populateEditFields(allAirlines[selectedAirlineId]); // Populate edit fields with the new airline's data
+                showMessage(`Airline "${newName}" added successfully!`, 'success');
+            } catch (error) {
+                console.error("Error adding new airline:", error);
+                showMessage("Error adding new airline.", 'error');
+            }
+        });
+
+        // Event listener for "Delete Selected Airline" button
+        deleteAirlineButton.addEventListener('click', async () => {
+            if (!selectedAirlineId) {
+                showMessage("Please select an airline to delete.", 'error');
+                return;
+            }
+
+            // Prevent deleting the airline if it's currently set for the main display
+            const mainDocSnap = await getDoc(mainDisplayDocRef);
+            if (mainDocSnap.exists() && mainDocSnap.data().selectedAirlineId === selectedAirlineId) {
+                showMessage("Cannot delete the airline currently set for the main display. Please change it first in the Airport Display Control Panel.", 'error');
+                return;
+            }
+
+            // Confirmation dialog before deleting
+            if (confirm(`Are you sure you want to delete airline "${allAirlines[selectedAirlineId].name}"? This action cannot be undone.`)) {
+                try {
+                    await deleteDoc(doc(airlinesCollectionRef, selectedAirlineId)); // Delete the document
+                    await loadAirlines(); // Reload the dropdown
+                    clearEditFields(); // Clear edit fields
+                    selectedAirlineId = ''; // Reset selected ID
+                    showMessage(`Airline "${allAirlines[selectedAirlineId].name}" deleted successfully!`, 'success');
+                } catch (error) {
+                    console.error("Error deleting airline:", error);
+                    showMessage("Error deleting airline.", 'error');
+                }
+            }
+        });
+
+        // Event listener for "Set as Current for Display" button
+        setCurrentAirlineButton.addEventListener('click', async () => {
+            if (!selectedAirlineId) {
+                showMessage("Please select an airline to set as current for the display.", 'error');
+                return;
+            }
+            try {
+                // Update the main display document with the selected airline's ID
+                await updateDoc(mainDisplayDocRef, {
+                    selectedAirlineId: selectedAirlineId
+                });
+                showMessage(`"${allAirlines[selectedAirlineId].name}" set as current airline for display!`, 'success');
+            } catch (error) {
+                console.error("Error setting current airline:", error);
+                showMessage("Error setting current airline for display.", 'error');
+            }
+        });
+
+        // Event listener for "Save Edited Airline" button (form submission)
+        airlineForm.addEventListener('submit', async (e) => {
+            e.preventDefault(); // Prevent default form submission behavior
+            if (!selectedAirlineId) {
+                showMessage("Please select an airline to save edits for.", 'error');
+                return;
+            }
+
+            const updatedName = editAirlineNameInput.value.trim();
+            const updatedLogoUrl = editAirlineLogoUrlInput.value.trim();
+
+            if (!updatedName) {
+                showMessage("Airline name cannot be empty.", 'error');
+                return;
+            }
+
+            try {
+                // If the airline's ID (name) has changed, we need to handle it as a rename
+                if (selectedAirlineId !== updatedName) {
+                    // Check if the new name already exists as an airline ID
+                    if (allAirlines[updatedName]) {
+                        showMessage(`Airline "${updatedName}" already exists. Cannot rename to an existing airline.`, 'error');
+                        return;
+                    }
+                    // Confirm rename with the user
+                    if (confirm(`You are renaming "${selectedAirlineId}" to "${updatedName}". This will create a new entry and delete the old one. Continue?`)) {
+                        // Create a new document with the new name/ID
+                        await setDoc(doc(airlinesCollectionRef, updatedName), { name: updatedName, logoUrl: updatedLogoUrl });
+                        // Delete the old document
+                        await deleteDoc(doc(airlinesCollectionRef, selectedAirlineId));
+
+                        // If the renamed airline was the one currently selected for the main display, update the main display doc
+                        const mainDocSnap = await getDoc(mainDisplayDocRef);
+                        if (mainDocSnap.exists() && mainDocSnap.data().selectedAirlineId === selectedAirlineId) {
+                            await updateDoc(mainDisplayDocRef, { selectedAirlineId: updatedName });
+                        }
+                        showMessage(`Airline renamed to "${updatedName}" and details saved!`, 'success');
+                    } else {
+                        return; // User cancelled the rename operation
+                    }
+                } else {
+                    // If the ID (name) hasn't changed, just update the existing document
+                    await updateDoc(doc(airlinesCollectionRef, selectedAirlineId), {
+                        name: updatedName,
+                        logoUrl: updatedLogoUrl
+                    });
+                    showMessage(`Airline "${updatedName}" details saved!`, 'success');
+                }
+
+                await loadAirlines(); // Reload dropdown and data to reflect changes
+                airlineSelect.value = updatedName; // Select the updated/renamed airline
+                selectedAirlineId = updatedName;
+                populateEditFields(allAirlines[selectedAirlineId]); // Populate fields with the latest data
+
+            } catch (error) {
+                console.error("Error saving airline details: ", error);
+                showMessage("Error saving airline details.", 'error');
+            }
+        });
+
+        // Event listener for "Clear Fields" button
+        resetEditButton.addEventListener('click', () => {
+            clearEditFields(); // Clear the edit input fields
+            selectedAirlineId = ''; // Deselect the current airline
+            airlineSelect.value = ''; // Reset the dropdown
+            showMessage("Edit fields cleared.", 'info');
+        });
+
+        // --- Initial Authentication and Data Loading ---
+        // This runs once the DOM is fully loaded.
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Observe Firebase authentication state changes
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    // User is signed in. Store their UID and display it.
+                    userId = user.uid;
+                    userIdDisplay.textContent = `User ID: ${userId}`;
+                    console.log("Airline Control Panel Authenticated as:", userId);
+                    loadingIndicator.classList.add('hidden'); // Hide loading indicator
+                    airlineForm.classList.remove('hidden'); // Show the form
+                    await loadAirlines(); // Load airlines data once authenticated
+                } else {
+                    // User is signed out. Attempt to sign them in.
+                    try {
+                        // Check if a custom authentication token is provided by the environment.
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            try {
+                                // Attempt to sign in using the provided custom token.
+                                await signInWithCustomToken(auth, __initial_auth_token);
+                            } catch (customTokenError) {
+                                // Fallback to anonymous sign-in if custom token fails
+                                console.warn("Custom token sign-in failed, attempting anonymous sign-in:", customTokenError);
+                                await signInAnonymously(auth);
+                            }
+                        } else {
+                            // If no custom token, sign in anonymously
+                            await signInAnonymously(auth);
+                        }
+                    } catch (error) {
+                        console.error("Error during authentication:", error);
+                        loadingIndicator.textContent = "Error authenticating. Please try again.";
+                        showMessage("Authentication failed. Please refresh and try again.", 'error');
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

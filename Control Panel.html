@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Airport Display Control Panel</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  /* Import Inter font for a modern, clean look */
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  
+  body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f4f7f6; /* Light, clean background */
+    color: #333333; /* Standard dark grey for text */
+    padding: 2rem; /* Overall padding for the body */
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; /* Align to top */
+    min-height: 100vh; /* Ensure it takes full viewport height */
+  }
+  
+  .container {
+    max-width: 900px; /* Slightly narrower for a more focused panel */
+    width: 100%;
+    margin: 0 auto; /* Center the container */
+  }
+  
+  .card {
+    background-color: #FFFFFF; /* White background for individual sections/cards */
+    border-radius: 0.75rem; /* Rounded corners for a modern feel */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Soft, modern shadow */
+    border: 1px solid #e0e0e0; /* Subtle border */
+    padding: 2rem; /* Generous padding inside each card */
+  }
+  
+  .input-field {
+    /* Styling for all input fields and select dropdowns */
+    /* Changed padding to 5px and ensured 100% width */
+    @apply w-full p-[5px] border border-gray-300 rounded-md bg-white text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
+    width: 100%; /* Explicitly set width to 100% */
+  }
+  
+  .btn-primary {
+    /* Primary action button styling - Enhanced for more button-like appearance */
+    @apply bg-blue-600 text-white px-8 py-3 rounded-md font-bold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-lg border border-blue-700;
+  }
+  
+  .label {
+    /* Styling for form labels */
+    @apply block text-sm font-medium text-gray-700 mb-1;
+  }
+  
+  .section-title {
+    /* Styling for section titles within cards */
+    @apply text-2xl font-bold text-gray-800 mb-6 pb-3 border-b-2 border-blue-100; /* Bolder, clearer title with a subtle blue underline */
+  }
+  
+  .message-box {
+    /* Styling for the floating notification message box */
+    @apply fixed top-6 right-6 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-transform transform translate-x-full opacity-0; /* Hidden by default, slides in */
+  }
+  
+  .message-box.show {
+    transform: translateX(0); /* Slide in effect */
+    opacity: 1;
+  }
+  
+  .error-message {
+    /* Styling for error messages below input fields */
+    @apply text-red-600 text-sm mt-1; /* Clear red for errors */
+  }
+</style>
+</head>
+<body>
+  <div class="container card">
+    <h1 class="text-3xl font-bold text-center mb-10 text-gray-900">Airport Display Control Panel</h1>
+
+    <!-- Message Box for displaying success or error messages -->
+    <div id="messageBox" class="message-box"></div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <!-- Flight Display Settings Section -->
+      <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+        <div class="space-y-5">
+          <div>
+            <label for="flightDestination" class="label">Destination City</label>
+            <input type="text" id="flightDestination" class="input-field" placeholder="e.g., New York JFK" />
+          </div>
+          <div>
+            <label for="departureTime" class="label">Departure Time (HH:MM)</label>
+            <input type="text" id="departureTime" class="input-field" placeholder="e.g., 20:45" pattern="^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$" title="Enter time in HH:MM 24-hour format" />
+            <p id="departureTimeError" class="error-message hidden">Please enter a valid 24-hour time (HH:MM).</p>
+          </div>
+          <div>
+            <label for="flightCode" class="label">Flight Code</label>
+            <input type="text" id="flightCode" class="input-field" placeholder="e.g., BA 112" />
+          </div>
+          <div>
+            <label for="estimatedTime" class="label">Estimated Time (optional)</label>
+            <input type="text" id="estimatedTime" class="input-field" placeholder="e.g., 21:30" pattern="^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$" title="Enter time in HH:MM 24-hour format" />
+            <p id="estimatedTimeError" class="error-message hidden">Please enter a valid 24-hour time (HH:MM) or leave blank.</p>
+          </div>
+          <!-- Swapped order of Airline and Aircraft Type -->
+          <div>
+            <label for="selectAirline" class="label">Airline</label>
+            <select id="selectAirline" class="input-field">
+              <option value="">Loading airlines...</option>
+            </select>
+          </div>
+          <div>
+            <label for="selectAircraft" class="label">Aircraft Type</label>
+            <select id="selectAircraft" class="input-field">
+              <option value="">Loading aircraft types...</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ticker Messages Section -->
+      <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+        <h2 class="section-title">Ticker Messages</h2>
+        <div>
+          <textarea id="tickerMessages" class="input-field h-40 resize-y" placeholder="Welcome to Heathrow Airport -,Please have your boarding pass and ID ready -,Enjoy your flight with British Airways -"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-10 text-center">
+      <button id="updateDisplayBtn" class="btn-primary">Update Display</button>
+    </div>
+
+  </div>
+
+  <script type="module">
+    // Import necessary Firebase modules
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // Firebase configuration - REPLACE WITH YOUR ACTUAL FIREBASE CONFIG IF DIFFERENT
+    const firebaseConfig = {
+      apiKey: "AIzaSyAaS-csdEobi4kudVAYhWlONbtJsgrQWGU",
+      authDomain: "airport-48aee.firebaseapp.com",
+      projectId: "airport-48aee",
+      storageBucket: "airport-48aee.firebasestorage.app",
+      messagingSenderId: "99018932663",
+      appId: "1:99018932663:web:ec67bbc0ebed1953b4e832",
+      measurementId: "G-WJLH773GMX"
+    };
+
+    // Initialize Firebase app and services
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    let userId = null; // Variable to store the authenticated user's ID
+    const appId = "airport-48aee"; // Fixed application ID for Firestore paths
+
+    // Firestore document and collection references
+    // This document will store the current display settings for the airport screen
+    const mainDisplayDocRef = doc(db, 'publicData', 'airportDisplayDoc'); 
+    // These collections store available aircraft types and airlines
+    const aircraftTypesCollectionRef = collection(db, 'aircraft_types'); 
+    const airlinesCollectionRef = collection(db, 'airlines'); 
+
+    // UI Element references (using their IDs)
+    const flightDestinationInput = document.getElementById('flightDestination');
+    const departureTimeInput = document.getElementById('departureTime');
+    const departureTimeError = document.getElementById('departureTimeError');
+    const flightCodeInput = document.getElementById('flightCode');
+    const estimatedTimeInput = document.getElementById('estimatedTime');
+    const estimatedTimeError = document.getElementById('estimatedTimeError');
+    const tickerMessagesInput = document.getElementById('tickerMessages');
+    const selectAircraft = document.getElementById('selectAircraft');
+    const selectAirline = document.getElementById('selectAirline'); 
+    const updateDisplayBtn = document.getElementById('updateDisplayBtn');
+    const messageBox = document.getElementById('messageBox');
+
+    /**
+     * Displays a temporary message (success or error) in a floating box.
+     * The message slides in from the right and disappears after 10 seconds.
+     * @param {string} message - The text content of the message.
+     * @param {boolean} isError - If true, the message box will be red (error); otherwise, green (success).
+     */
+    function showMessage(message, isError = false) {
+      messageBox.textContent = message;
+      // Remove previous styling classes to ensure correct color is applied
+      messageBox.classList.remove('bg-green-600', 'bg-red-600');
+      // Apply the appropriate color based on whether it's an error
+      messageBox.classList.add(isError ? 'bg-red-600' : 'bg-green-600');
+      messageBox.classList.add('show'); // Trigger CSS transition to show the box
+      
+      // Set a timeout to hide the message box after 10 seconds
+      setTimeout(() => {
+        messageBox.classList.remove('show'); // Trigger CSS transition to hide the box
+      }, 10000); 
+    }
+
+    /**
+     * Validates a given time string to ensure it adheres to the HH:MM (24-hour) format.
+     * An empty string is also considered valid, allowing for optional time inputs.
+     * @param {string} timeString - The time string to be validated.
+     * @returns {boolean} True if the timeString is valid (or empty), false otherwise.
+     */
+    function isValidTime(timeString) {
+      if (!timeString) return true; // Allow empty string if time is optional
+      // Regular expression to match HH:MM format (00:00 to 23:59)
+      const regex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/; 
+      return regex.test(timeString);
+    }
+
+    /**
+     * Fetches available aircraft types from the 'aircraft_types' Firestore collection
+     * and populates the 'Select Aircraft Type' dropdown (`selectAircraft`).
+     * It also attempts to pre-select the aircraft type currently saved in the main display document.
+     */
+    async function fetchAircraftTypes() {
+      try {
+        const querySnapshot = await getDocs(aircraftTypesCollectionRef);
+        // Clear existing options and add a default "Select Aircraft" option
+        selectAircraft.innerHTML = '<option value="">Select Aircraft</option>'; 
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          // Create an option element for each aircraft type
+          const option = `<option value="${doc.id}">${data.type || doc.id}</option>`;
+          selectAircraft.innerHTML += option;
+        });
+
+        // After populating, try to set the dropdown to the currently selected aircraft from Firestore
+        const currentDisplayData = await getDoc(mainDisplayDocRef);
+        if (currentDisplayData.exists() && currentDisplayData.data().selectedAircraftId) {
+            selectAircraft.value = currentDisplayData.data().selectedAircraftId;
+        }
+      } catch (error) {
+        console.error("Error fetching aircraft types for display panel:", error);
+        showMessage("Error loading aircraft types. Please check console.", true);
+      }
+    }
+
+    /**
+     * Fetches available airlines from the 'airlines' Firestore collection
+     * and populates the 'Select Airline' dropdown (`selectAirline`).
+     * It also attempts to pre-select the airline currently saved in the main display document.
+     */
+    async function fetchAirlines() {
+      try {
+        const querySnapshot = await getDocs(airlinesCollectionRef);
+        // Clear existing options and add a default "Select Airline" option
+        selectAirline.innerHTML = '<option value="">Select Airline</option>'; 
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          // Create an option element for each airline
+          const option = `<option value="${doc.id}">${data.name || doc.id}</option>`;
+          selectAirline.innerHTML += option;
+        });
+
+        // After populating, try to set the dropdown to the currently selected airline from Firestore
+        const currentDisplayData = await getDoc(mainDisplayDocRef);
+        if (currentDisplayData.exists() && currentDisplayData.data().selectedAirlineId) {
+            selectAirline.value = currentDisplayData.data().selectedAirlineId;
+        }
+      } catch (error) {
+        console.error("Error fetching airlines for display panel:", error);
+        showMessage("Error loading airlines. Please check console.", true);
+      }
+    }
+
+    /**
+     * Loads the current flight display settings from Firestore into the form fields.
+     * This function is called on panel initialization to show the last saved state.
+     */
+    async function loadDisplayData() {
+      try {
+        const docSnap = await getDoc(mainDisplayDocRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          // Populate each form field with its corresponding data from Firestore
+          flightDestinationInput.value = data.flightDestination || '';
+          departureTimeInput.value = data.departureTime || '';
+          flightCodeInput.value = data.flightCode || '';
+          estimatedTimeInput.value = data.estimatedTime || '';
+          tickerMessagesInput.value = data.tickerMessages || '';
+
+          // Set selected values for dropdowns, ensuring they reflect the saved state
+          if (data.selectedAircraftId) {
+            selectAircraft.value = data.selectedAircraftId;
+          }
+          if (data.selectedAirlineId) {
+            selectAirline.value = data.selectedAirlineId;
+          }
+          showMessage("Display data loaded successfully.", false);
+        } else {
+          // If no document exists, inform the user
+          showMessage("No existing display data found. Starting fresh.", false);
+        }
+      } catch (error) {
+        console.error("Error loading display data:", error);
+        showMessage("Failed to load display data. Please check console.", true);
+      }
+    }
+
+    /**
+     * Event listener for the 'Update Display' button.
+     * It collects all current form data, performs validation, and then saves
+     * the data to the 'airportDisplayDoc' in Firestore.
+     */
+    updateDisplayBtn.addEventListener('click', async () => {
+      const departureTime = departureTimeInput.value.trim();
+      const estimatedTime = estimatedTimeInput.value.trim();
+
+      // Validate departure time input
+      if (!isValidTime(departureTime)) {
+        departureTimeError.classList.remove('hidden'); // Show error message
+        showMessage("Invalid departure time format. Please use HH:MM.", true);
+        return; // Stop execution if validation fails
+      } else {
+        departureTimeError.classList.add('hidden'); // Hide error message if valid
+      }
+
+      // Validate estimated time input if it's not empty
+      if (estimatedTime && !isValidTime(estimatedTime)) {
+        estimatedTimeError.classList.remove('hidden'); // Show error message
+        showMessage("Invalid estimated time format. Please use HH:MM or leave blank.", true);
+        return; // Stop execution if validation fails
+      } else {
+        estimatedTimeError.classList.add('hidden'); // Hide error message if valid or empty
+      }
+
+      // Construct the data object to be saved to Firestore
+      const updatedData = {
+        flightDestination: flightDestinationInput.value.trim(),
+        departureTime: departureTime,
+        flightCode: flightCodeInput.value.trim(),
+        estimatedTime: estimatedTime,
+        tickerMessages: tickerMessagesInput.value.trim(),
+        selectedAircraftId: selectAircraft.value,
+        selectedAirlineId: selectAirline.value,
+      };
+
+      try {
+        // Use setDoc to save the data. This will create the document if it doesn't exist,
+        // or overwrite it if it does.
+        await setDoc(mainDisplayDocRef, updatedData);
+        showMessage("Display updated successfully!", false);
+      } catch (error) {
+        console.error("Error updating display:", error);
+        showMessage("Failed to update display. Please check console.", true);
+      }
+    });
+
+    // --- Initial Setup and Authentication ---
+    // This block runs once the entire HTML document has been loaded and parsed.
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Set up an authentication state observer. This function is called whenever
+      // the user's sign-in state changes (e.g., signed in, signed out).
+      onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          // User is signed in. Store their UID.
+          userId = user.uid;
+          console.log("Authenticated as:", userId);
+          
+          // Once authenticated, fetch initial data for dropdowns and form fields.
+          await fetchAircraftTypes();
+          await fetchAirlines();
+          await loadDisplayData();
+        } else {
+          // User is signed out. Attempt to sign them in.
+          try {
+            // Check if a custom authentication token is provided by the environment.
+            // This is typical in secure Canvas environments.
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+              try {
+                // Attempt to sign in using the provided custom token.
+                await signInWithCustomToken(auth, __initial_auth_token);
+              } catch (customTokenError) {
+                // If custom token sign-in fails (e.g., token expired or invalid),
+                // fall back to anonymous authentication.
+                console.warn("Custom token sign-in failed, attempting anonymous sign-in:", customTokenError);
+                await signInAnonymously(auth);
+              }
+            } else {
+              // If no custom token is available, sign in anonymously.
+              await signInAnonymously(auth);
+            }
+          } catch (error) {
+            // Catch any errors during the authentication process.
+            console.error("Error during authentication:", error);
+            showMessage("Authentication failed. Please refresh and try again.", true);
+          }
+        }
+      });
+    });
+  </script>
+</body>
+</html>
